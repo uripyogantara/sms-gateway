@@ -1,6 +1,4 @@
-import requests
-import auth
-import pymysql
+import requests,auth,pymysql,time
 from datetime import datetime
 # Connect to the database
 connection = pymysql.connect(host='localhost',
@@ -12,40 +10,53 @@ cursor =connection.cursor()
 
 EMAIL=auth.EMAIL
 PASSWORD=auth.PASSWORD
-
 # url and parameter API
 url="http://smsgateway.me/api/v3/messages"
 params={"email":EMAIL,"password":PASSWORD}
 
 # get request & convert json
-r=requests.get(url,params)
-response=r.json()
-
-cursor.execute("SELECT max(id) as max FROM messages")
-id=cursor.fetchone()
-# print(type(max))
 
 
-# get result and filter max id
-result=response['result']
-filter= [item for item in result if int(item['id'])> id['max']]
+def checkApi():
+    r = requests.get(url, params)
+    status=r.status_code
+    print(status)
+    response = r.json()
 
-if filter:
+    cursor.execute("SELECT max(id) as max FROM messages")
+    id = cursor.fetchone()
+    # print(type(max))
 
-    for message in filter:
-        received_at="0000-00-00 00:00:00"
-        sent_at = "0000-00-00 00:00:00"
-        created_at=datetime.fromtimestamp(message['created_at']).strftime('%Y-%m-%d %H:%M:%S')
-        if(message['sent_at']):
-            sent_at=datetime.fromtimestamp(message['sent_at']).strftime('%Y-%m-%d %H:%M:%S')
+    # get result and filter max id
+    result = response['result']
+    filter = [item for item in result if int(item['id']) > id['max']]
 
-        if (message['received_at']):
-            received_at = datetime.fromtimestamp(message['received_at']).strftime('%Y-%m-%d %H:%M:%S')
+    if filter:
 
-        sql="INSERT INTO messages values(%s,%s,'%s','%s','%s','%s','%s','%s','%s')"%(message['id'],message['device_id'],message['message'],message['status'],received_at,sent_at,created_at,message['contact']['name'],message['contact']['number'])
+        for message in filter:
+            received_at = "0000-00-00 00:00:00"
+            sent_at = "0000-00-00 00:00:00"
+            created_at = datetime.fromtimestamp(message['created_at']).strftime('%Y-%m-%d %H:%M:%S')
+            if (message['sent_at']):
+                sent_at = datetime.fromtimestamp(message['sent_at']).strftime('%Y-%m-%d %H:%M:%S')
+                alert = "Pesan Terkirim ke %s" % message['contact']['name']
+                print(alert)
 
-        cursor.execute(sql)
-        connection.commit()
-        connection.rollback()
-else:
-    print("cek...")
+            if (message['received_at']):
+                received_at = datetime.fromtimestamp(message['received_at']).strftime('%Y-%m-%d %H:%M:%S')
+                alert = "Pesan Masuk dari %s" % message['contact']['name']
+                print(alert)
+
+            sql = "INSERT INTO messages values(%s,%s,'%s','%s','%s','%s','%s','%s','%s')" % (
+            message['id'], message['device_id'], message['message'], message['status'], received_at, sent_at,
+            created_at, message['contact']['name'], message['contact']['number'])
+
+            cursor.execute(sql)
+            connection.commit()
+            connection.rollback()
+    else:
+        print("cek...")
+    time.sleep(5)
+
+while 1:
+    checkApi()
