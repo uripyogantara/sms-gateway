@@ -1,18 +1,13 @@
-import requests,auth,pymysql,time
+import requests
 
-EMAIL=auth.EMAIL
-PASSWORD=auth.PASSWORD
-DEVICE=86921
+url="http://192.168.43.1:8080/v1/sms"
 
-url="http://smsgateway.me/api/v3/messages/send"
+phone = input("Masukan Nomor Telepon ")
+message = input("Masukan Pesan Anda ")
 params={
-    "email":EMAIL,
-    "password":PASSWORD,
-    "device":DEVICE,
-    "number":"+628539301350",
-    "message":"tes tes tes",
+    "phone":phone,
+    "message":message,
 }
 r=requests.post(url,params)
-response = r.json()
-
-print(response)
+# response = r.json()
+print(r)
